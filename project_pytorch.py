@@ -351,5 +351,14 @@ def generate_text(model, start_char, char_to_ind, ind_to_char, vocab_size,
 
     return "".join(generated)
 
+print("RNN sample:")
+print(generate_text(rnn_model, "T", char_to_ind, ind_to_char, vocab_size, device=device))
+
+print("LSTM 1-layer sample:")
+print(generate_text(lstm1_model, "T", char_to_ind, ind_to_char, vocab_size, device=device))
+
+print("LSTM 2-layer sample:")
+print(generate_text(lstm2_model, "T", char_to_ind, ind_to_char, vocab_size, device=device))
+
 
 
