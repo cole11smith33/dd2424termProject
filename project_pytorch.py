@@ -147,3 +147,172 @@ def evaluate_model(model, data_indices, vocab_size, seq_length=100,
 test_loss = evaluate_model(model, test_indices, vocab_size, seq_length, batch_size, device) #calculates the final performance on the test set
 test_perplexity = np.exp(test_loss) #another way to express the loss 
 
+
+
+#Experiments
+
+train_indices = text_to_indices(train_data, char_to_ind)
+val_indices = text_to_indices(val_data, char_to_ind)
+test_indices = text_to_indices(test_data, char_to_ind)
+
+#Hyperparameters
+
+vocab_size = len(unique_chars)
+hidden_size = 100
+seq_length = 100
+batch_size = 64
+learning_rate = 1e-3
+num_steps = 5000
+eval_every = 500
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+print("Using device:", device)
+
+#RNN baseline
+
+rnn_model = CharRNN(
+    vocab_size=vocab_size,
+    hidden_size=hidden_size,
+    num_layers=1
+)
+
+rnn_train_losses, rnn_val_losses = train_model(
+    rnn_model,
+    train_indices,
+    val_indices,
+    vocab_size,
+    seq_length=seq_length,
+    batch_size=batch_size,
+    learning_rate=learning_rate,
+    num_steps=num_steps,
+    eval_every=eval_every,
+    device=device
+)
+
+rnn_test_loss = evaluate_model(
+    rnn_model,
+    test_indices,
+    vocab_size,
+    seq_length=seq_length,
+    batch_size=batch_size,
+    device=device
+)
+
+rnn_test_perplexity = np.exp(rnn_test_loss)
+
+print("RNN test loss:", rnn_test_loss)
+print("RNN test perplexity:", rnn_test_perplexity)
+
+#LSTM 1-layer
+
+lstm1_model = CharLSTM(
+    vocab_size=vocab_size,
+    hidden_size=hidden_size,
+    num_layers=1
+)
+
+lstm1_train_losses, lstm1_val_losses = train_model(
+    lstm1_model,
+    train_indices,
+    val_indices,
+    vocab_size,
+    seq_length=seq_length,
+    batch_size=batch_size,
+    learning_rate=learning_rate,
+    num_steps=num_steps,
+    eval_every=eval_every,
+    device=device
+)
+
+lstm1_test_loss = evaluate_model(
+    lstm1_model,
+    test_indices,
+    vocab_size,
+    seq_length=seq_length,
+    batch_size=batch_size,
+    device=device
+)
+
+lstm1_test_perplexity = np.exp(lstm1_test_loss)
+
+print("LSTM 1-layer test loss:", lstm1_test_loss)
+print("LSTM 1-layer test perplexity:", lstm1_test_perplexity)
+
+#LSTM 2-layer 
+
+lstm2_model = CharLSTM(
+    vocab_size=vocab_size,
+    hidden_size=hidden_size,
+    num_layers=2,
+    dropout=0.2
+)
+
+lstm2_train_losses, lstm2_val_losses = train_model(
+    lstm2_model,
+    train_indices,
+    val_indices,
+    vocab_size,
+    seq_length=seq_length,
+    batch_size=batch_size,
+    learning_rate=learning_rate,
+    num_steps=num_steps,
+    eval_every=eval_every,
+    device=device
+)
+
+lstm2_test_loss = evaluate_model(
+    lstm2_model,
+    test_indices,
+    vocab_size,
+    seq_length=seq_length,
+    batch_size=batch_size,
+    device=device
+)
+
+lstm2_test_perplexity = np.exp(lstm2_test_loss)
+
+print("LSTM 2-layer test loss:", lstm2_test_loss)
+print("LSTM 2-layer test perplexity:", lstm2_test_perplexity)
+
+results = [
+    ["RNN", 1, hidden_size, rnn_test_loss, rnn_test_perplexity],
+    ["LSTM", 1, hidden_size, lstm1_test_loss, lstm1_test_perplexity],
+    ["LSTM", 2, hidden_size, lstm2_test_loss, lstm2_test_perplexity],
+]
+
+print("\nFinal Results")
+print("Model\tLayers\tHidden Size\tTest Loss\tTest Perplexity")
+
+for row in results:
+    print(f"{row[0]}\t{row[1]}\t{row[2]}\t\t{row[3]:.4f}\t\t{row[4]:.4f}")
+
+def generate_text(model, start_char, char_to_ind, ind_to_char, vocab_size,
+                  length=500, temperature=1.0, device="cpu"):
+    model.eval()
+
+    current_index = char_to_ind[start_char]
+    generated = [start_char]
+    hidden = None
+
+    with torch.no_grad():
+        for _ in range(length):
+            x = torch.tensor([[current_index]], dtype=torch.long).to(device)
+            x_onehot = torch.nn.functional.one_hot(
+                x, num_classes=vocab_size
+            ).float()
+
+            logits, hidden = model(x_onehot, hidden)
+
+            logits = logits[0, -1, :] / temperature
+            probabilities = torch.softmax(logits, dim=0)
+
+            next_index = torch.multinomial(probabilities, num_samples=1).item()
+            next_char = ind_to_char[next_index]
+
+            generated.append(next_char)
+            current_index = next_index
+
+    return "".join(generated)
+
+
+
