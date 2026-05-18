@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import torch
 import torch.nn as nn
 import numpy as np
@@ -144,9 +146,38 @@ def evaluate_model(model, data_indices, vocab_size, seq_length=100,
 
     return np.mean(losses)
 
-test_loss = evaluate_model(model, test_indices, vocab_size, seq_length, batch_size, device) #calculates the final performance on the test set
-test_perplexity = np.exp(test_loss) #another way to express the loss 
 
+
+
+
+
+current_file = Path(__file__).resolve()
+book_dir     = current_file.parent / "data"
+book_fname   = book_dir / "train.txt"
+
+with open(book_fname, "r") as fid:
+    book_data = fid.read()
+
+unique_chars = sorted(list(set(book_data)))
+K = len(unique_chars)
+
+char_to_ind = {ch: i  for i, ch in enumerate(unique_chars)}
+ind_to_char = {i:  ch for i, ch in enumerate(unique_chars)}
+
+# ── Train / Val / Test split (80 / 10 / 10 by character position) ─────────────
+n         = len(book_data)
+train_end = int(0.80 * n)
+val_end   = int(0.90 * n)
+
+train_data = book_data[:train_end]
+val_data   = book_data[train_end:val_end]
+test_data  = book_data[val_end:]
+
+print(f"Vocabulary size : {K}")
+print(f"Total chars     : {n:,}")
+print(f"Train           : {len(train_data):,}  ({len(train_data)/n:.1%})")
+print(f"Validation      : {len(val_data):,}   ({len(val_data)/n:.1%})")
+print(f"Test            : {len(test_data):,}   ({len(test_data)/n:.1%})")
 
 
 #Experiments
@@ -167,6 +198,8 @@ eval_every = 500
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print("Using device:", device)
+
+
 
 #RNN baseline
 
@@ -268,6 +301,10 @@ lstm2_test_loss = evaluate_model(
     batch_size=batch_size,
     device=device
 )
+
+
+test_loss = evaluate_model(rnn_model, test_indices, vocab_size, seq_length, batch_size, device) #calculates the final performance on the test set
+test_perplexity = np.exp(test_loss) #another way to express the loss 
 
 lstm2_test_perplexity = np.exp(lstm2_test_loss)
 
