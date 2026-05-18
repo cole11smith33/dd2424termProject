@@ -9,8 +9,8 @@ rng  = np.random.default_rng(seed)
 
 #read data, same method as in previous assignments in this course
 current_file = Path(__file__).resolve()
-book_dir     = current_file.parent 
-book_fname   = book_dir / "trainingData.txt"
+book_dir     = current_file.parent / "data" 
+book_fname   = book_dir / "train.txt"
 
 fid = open(book_fname, "r")
 book_data = fid.read()
