@@ -153,7 +153,7 @@ def evaluate_model(model, data_indices, vocab_size, seq_length=100,
 
 current_file = Path(__file__).resolve()
 book_dir     = current_file.parent / "data"
-book_fname   = book_dir / "train.txt"
+book_fname   = book_dir / "divineComedy.txt"
 
 with open(book_fname, "r") as fid:
     book_data = fid.read()
@@ -181,7 +181,10 @@ print(f"Test            : {len(test_data):,}   ({len(test_data)/n:.1%})")
 
 
 #Experiments
-
+Model   Layers  Hidden Size     Test Loss       Test Perplexity
+RNN     1       100             1.6436          5.1739
+LSTM    1       100             1.6426          5.1686
+LSTM    2       100             1.5616          4.7663
 train_indices = text_to_indices(train_data, char_to_ind)
 val_indices = text_to_indices(val_data, char_to_ind)
 test_indices = text_to_indices(test_data, char_to_ind)
