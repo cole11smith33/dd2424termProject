@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import torch
@@ -207,22 +208,6 @@ lstm2_test_loss = evaluate_model(
     device=device
 )
 
-
-lstm2_test_perplexity = np.exp(lstm2_test_loss)
-
-print("LSTM 2-layer test loss:", lstm2_test_loss)
-print("LSTM 2-layer test perplexity:", lstm2_test_perplexity)
-
-results = [
-    ["LSTM", 2, hidden_size, lstm2_test_loss, lstm2_test_perplexity],
-]
-
-print("\nFinal Results")
-print("Model\tLayers\tHidden Size\tTest Loss\tTest Perplexity")
-
-for row in results:
-    print(f"{row[0]}\t{row[1]}\t{row[2]}\t\t{row[3]:.4f}\t\t{row[4]:.4f}")
-
 def generate_text(model, start_char, char_to_ind, ind_to_char, vocab_size,
                   length=500, temperature=1.0, device="cpu"):
     model.eval()
@@ -251,8 +236,79 @@ def generate_text(model, start_char, char_to_ind, ind_to_char, vocab_size,
 
     return "".join(generated)
 
-print("LSTM 2-layer sample:")
-print(generate_text(lstm2_model, "T", char_to_ind, ind_to_char, vocab_size, device=device))
-
-
-
+# ── Hidden-size experiment ────────────────────────────────────────────────────
+ 
+HIDDEN_SIZES = [60, 70, 80, 90, 110, 120, 130, 140, 150]
+ 
+all_results       = []   # final summary rows
+all_train_curves  = {}   # step → train loss  (for plotting)
+all_val_curves    = {}   # step → val loss    (for plotting)
+ 
+for hs in HIDDEN_SIZES:
+    print(f"\n{'='*60}")
+    print(f"  Training 2-layer LSTM  |  hidden_size = {hs}")
+    print(f"{'='*60}")
+ 
+    model = CharLSTM(
+        vocab_size=vocab_size,
+        hidden_size=hs,
+        num_layers=2,
+        dropout=0.2
+    )
+ 
+    # Count trainable parameters so we can report model size
+    num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"  Parameters: {num_params:,}")
+ 
+    train_losses, val_losses = train_model(
+        model, train_indices, val_indices, vocab_size,
+        seq_length=seq_length, batch_size=batch_size,
+        learning_rate=learning_rate, num_steps=num_steps,
+        eval_every=eval_every, device=device
+    )
+ 
+    test_loss        = evaluate_model(model, test_indices, vocab_size,
+                                      seq_length=seq_length, batch_size=batch_size,
+                                      device=device)
+    test_perplexity  = np.exp(test_loss)
+ 
+    print(f"\n  hidden={hs}  test_loss={test_loss:.4f}  test_perplexity={test_perplexity:.2f}")
+ 
+    # ── Generate a short sample ───────────────────────────────────────────────
+    sample = generate_text(model, "T", char_to_ind, ind_to_char, vocab_size,
+                            length=200, temperature=0.8, device=device)
+    print(f"\n  Sample text:\n{sample}\n")
+ 
+    all_results.append({
+        "hidden_size":      hs,
+        "num_params":       num_params,
+        "test_loss":        round(test_loss, 4),
+        "test_perplexity":  round(float(test_perplexity), 4),
+        "train_losses":     [round(v, 4) for v in train_losses],
+        "val_losses":       [round(v, 4) for v in val_losses],
+    })
+ 
+    all_train_curves[hs] = train_losses
+    all_val_curves[hs]   = val_losses
+ 
+# ── Print final comparison table ──────────────────────────────────────────────
+ 
+steps_logged = list(range(eval_every, num_steps + 1, eval_every))   # [500, 1000, …, 5000]
+ 
+print("\n" + "="*70)
+print("FINAL RESULTS — hidden-size experiment (2-layer LSTM, 5 000 steps)")
+print("="*70)
+print(f"{'Hidden':>8}  {'Params':>10}  {'Test Loss':>10}  {'Perplexity':>12}")
+print("-"*50)
+for r in all_results:
+    print(f"{r['hidden_size']:>8}  {r['num_params']:>10,}  {r['test_loss']:>10.4f}  {r['test_perplexity']:>12.2f}")
+ 
+# ── Save results to JSON (for the visualisation dashboard) ────────────────────
+output = {
+    "steps":   steps_logged,
+    "results": all_results,
+}
+json_path = Path(__file__).parent / "hidden_size_results.json"
+with open(json_path, "w") as f:
+    json.dump(output, f, indent=2)
+print(f"\nResults saved to {json_path}")
