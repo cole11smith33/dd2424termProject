@@ -481,33 +481,3 @@ def plot_comparison(all_results, save_path=None):
 
 # ── Plot the baseline on its own (LSTM results added later) ───────────────────
 plot_comparison([results], save_path=book_dir / "model_comparison.png")
-
-# ══════════════════════════════════════════════════════════════════════════════
-# USAGE EXAMPLE — how to add LSTM results once you have them
-# ══════════════════════════════════════════════════════════════════════════════
-#
-# After training your PyTorch LSTMs, build result dicts that match the schema
-# above and load the saved RNN baseline, then call plot_comparison:
-#
-#   import json
-#   with open("rnn_results.json") as f:
-#       rnn_results = json.load(f)
-#
-#   # Convert lists back to tuples
-#   for key in ('train_smooth', 'val_curve', 'epoch_val_loss'):
-#       rnn_results[key] = [tuple(x) for x in rnn_results[key]]
-#
-#   lstm1_results = {
-#       'model_name':     'LSTM 1-layer',
-#       'hidden_size':    128,
-#       'train_smooth':   [...],
-#       'val_curve':      [...],
-#       'epoch_val_loss': [...],
-#       'final_test_loss': 2.05,
-#       'best_val_loss':  2.10,
-#   }
-#   lstm2_results = { 'model_name': 'LSTM 2-layer', ... }
-#
-#   plot_comparison([rnn_results, lstm1_results, lstm2_results])
-#
-# ══════════════════════════════════════════════════════════════════════════════
