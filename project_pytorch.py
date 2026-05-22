@@ -189,7 +189,7 @@ test_indices = text_to_indices(test_data, char_to_ind)
 #Hyperparameters
 
 vocab_size = len(unique_chars)
-hidden_size = 100
+hidden_size = 135
 seq_length = 100
 batch_size = 64
 learning_rate = 1e-3
@@ -277,7 +277,7 @@ lstm2_model = CharLSTM(
     vocab_size=vocab_size,
     hidden_size=hidden_size,
     num_layers=2,
-    dropout=0.2
+    dropout=0.4
 )
 
 lstm2_train_losses, lstm2_val_losses = train_model(
@@ -303,8 +303,8 @@ lstm2_test_loss = evaluate_model(
 )
 
 
-test_loss = evaluate_model(rnn_model, test_indices, vocab_size, seq_length, batch_size, device) #calculates the final performance on the test set
-test_perplexity = np.exp(test_loss) #another way to express the loss 
+# test_loss = evaluate_model(rnn_model, test_indices, vocab_size, seq_length, batch_size, device) #calculates the final performance on the test set
+# test_perplexity = np.exp(test_loss) #another way to express the loss 
 
 lstm2_test_perplexity = np.exp(lstm2_test_loss)
 
