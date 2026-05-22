@@ -319,7 +319,7 @@ def ngram_overlap_percentage(generated_text, reference_text, n):
     return 100 * matching_ngrams / len(generated_ngrams)
 
 
-def bleu_score(generated_text, reference_text, max_n=4):
+def bleu_score(generated_text, reference_text, max_n=2):
     generated_words = tokenize_words(generated_text)
     reference_words = tokenize_words(reference_text)
 
@@ -346,20 +346,12 @@ def bleu_score(generated_text, reference_text, max_n=4):
         precision = overlap / total if total > 0 else 1e-9
         precisions.append(max(precision, 1e-9))
 
-    reference_length = len(reference_words)
-    generated_length = len(generated_words)
-
-    if generated_length > reference_length:
-        brevity_penalty = 1.0
-    else:
-        brevity_penalty = math.exp(1 - reference_length / generated_length)
-
     log_precision_sum = 0.0
 
     for precision in precisions:
         log_precision_sum += math.log(precision)
 
-    bleu = brevity_penalty * math.exp(log_precision_sum / max_n)
+    bleu = math.exp(log_precision_sum / max_n)
 
     return bleu
 
@@ -368,7 +360,7 @@ def evaluate_generated_text(generated_text, reference_text):
     word_percentage = reference_word_percentage(generated_text, reference_text)
     bigram_overlap = ngram_overlap_percentage(generated_text, reference_text, 2)
     trigram_overlap = ngram_overlap_percentage(generated_text, reference_text, 3)
-    bleu = bleu_score(generated_text, reference_text)
+    bleu = bleu_score(generated_text, reference_text,max_n=2)
 
     return {
         "reference_word_percentage": word_percentage,
@@ -401,6 +393,5 @@ print("Metric\tValue")
 print(f"Reference word percentage\t{text_metrics['reference_word_percentage']:.2f}%")
 print(f"Bigram overlap\t{text_metrics['bigram_overlap']:.2f}%")
 print(f"Trigram overlap\t{text_metrics['trigram_overlap']:.2f}%")
-print(f"BLEU score\t{text_metrics['bleu']:.4f}")
+print(f"BLEU-2 score\t{text_metrics['bleu']:.4f}")
 print(f"Test perplexity\t{lstm2_test_perplexity:.4f}")
-
